@@ -33,32 +33,42 @@ function init() {
 			} 
 		}
 	}
-	scene.add(new THREE.Mesh( mainGeom,new THREE.MeshLambertMaterial( )));
+	var cubes = new THREE.Mesh( mainGeom,new THREE.MeshLambertMaterial( ));
+	cubes.castShadow = true;
+	cubes.receiveShadow = true;
+
+	scene.add(cubes);
 	
 	light = new THREE.SpotLight( "blue" );
 	light.position.set(-d*2,-d*2,-d*2);
+	light.castShadow = true;
 	scene.add( light );
 
 	light = new THREE.SpotLight( "red" );
 	light.position.set(d*2,d*2,d*2);
+	light.castShadow = true;
 	scene.add( light );
 
 	light = new THREE.SpotLight( "yellow" );
 	light.position.set(-d*2,d*2,d*2);
+	light.castShadow = true;
 	scene.add( light );
 
 	light = new THREE.SpotLight( "white" );
 	light.position.set(d*2,-d*2,d*2);
 	light.intensity = 2;
+	light.castShadow = true;
 	scene.add( light );
 
 	light = new THREE.SpotLight( "green" );
 	light.position.set(d*2,d*2,-d*2);
+	light.castShadow = true;
 	scene.add( light );
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setClearColor( "black", 1 );
   	renderer.setSize( window.innerWidth, window.innerHeight );
+  	//renderer.shadowMapEnabled = true;
 
   	container = document.getElementById( 'container' );
   	container.appendChild( renderer.domElement );
