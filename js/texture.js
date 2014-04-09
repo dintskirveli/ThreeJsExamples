@@ -49,7 +49,9 @@ function init() {
 	var soupGeom = new THREE.Geometry();
 	var soupLids = new THREE.Geometry();
 
-	var soupLid = new THREE.Mesh(circleGeometry(2,60));
+	//var soupLid = new THREE.Mesh(circleGeometry(2,60));
+	var soupLid = new THREE.Mesh(new THREE.CircleGeometry(2,60));
+	//soupLid.rotation.set(Math.PI,0,0);
 	var soup = new THREE.Mesh( new THREE.CylinderGeometry( 2, 2, 4.5, 60, 1, true ));
 
 	var yRot = 0;
@@ -65,11 +67,11 @@ function init() {
 			THREE.GeometryUtils.merge( soupGeom, soup );
 
 			soupLid.position.set(x,4.5,-5*i);
-			soupLid.rotation.set(Math.PI,yRot,0);
+			soupLid.rotation.set(3*Math.PI/2,0,yRot);
 			THREE.GeometryUtils.merge( soupLids, soupLid );
 
 			soupLid.position.set(x,0,-5*i);
-			soupLid.rotation.set(0,yRot,0);
+			//soupLid.rotation.set(0,yRot,0);
 			THREE.GeometryUtils.merge( soupLids, soupLid );
 		}
 	}
@@ -100,9 +102,12 @@ function init() {
 	scene.add(light);
 	
 
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		alert("No WebGL support detected");
 
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	//renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setClearColor( "black", 1 );
   	renderer.setSize( window.innerWidth, window.innerHeight );
   	renderer.shadowMapEnabled = true;
@@ -110,34 +115,12 @@ function init() {
   	container = document.getElementById( 'container' );
   	container.appendChild( renderer.domElement );
   	window.addEventListener( 'resize', onWindowResize, false );
-}
 
-function circleGeometry(radius, slices) {
-	var geo = new THREE.Geometry();
-	var r = radius
-	for (var i=0; i<slices; i++) {
-		var a = i * 1/slices * Math.PI * 2;
-		var z = Math.sin(a);
-		var x = Math.cos(a);
-		var a1 = (i+1) * 1/slices * Math.PI * 2;
-		var z1 = Math.sin(a1);
-		var x1 = Math.cos(a1);
-		geo.vertices.push(
-			new THREE.Vector3(0, 0, 0),
-			new THREE.Vector3(x*r, 0, z*r),
-			new THREE.Vector3(x1*r, 0, z1*r)
-	  	);
-	  	geo.faceVertexUvs[0].push([
-			new THREE.Vector2(0.5, 0.5),
-			new THREE.Vector2(x/2+0.5, z/2+0.5),
-			new THREE.Vector2(x1/2+0.5, z1/2+0.5)
-		]);
-		geo.faces.push(new THREE.Face3(i*3, i*3+1, i*3+2));
-	}
-	//console.log(geo.faces);
-	geo.computeCentroids();
-	geo.computeFaceNormals();
-	return geo;
+  	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
 }
 
 function onWindowResize() {
@@ -152,6 +135,7 @@ function onWindowResize() {
 function animate() {
 	requestAnimationFrame( animate );
 	controls.update();
+	stats.update();
 }
 
 function render() {
