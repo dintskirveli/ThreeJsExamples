@@ -100,9 +100,12 @@ function init() {
 	scene.add(light);
 	
 
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
 
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	//renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setClearColor( "black", 1 );
   	renderer.setSize( window.innerWidth, window.innerHeight );
   	renderer.shadowMapEnabled = true;
@@ -110,6 +113,12 @@ function init() {
   	container = document.getElementById( 'container' );
   	container.appendChild( renderer.domElement );
   	window.addEventListener( 'resize', onWindowResize, false );
+
+  	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
 }
 
 function circleGeometry(radius, slices) {
@@ -152,6 +161,7 @@ function onWindowResize() {
 function animate() {
 	requestAnimationFrame( animate );
 	controls.update();
+	stats.update();
 }
 
 function render() {

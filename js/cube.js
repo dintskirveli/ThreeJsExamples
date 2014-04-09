@@ -65,13 +65,25 @@ function init() {
 	light.castShadow = true;
 	scene.add( light );
 
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
 	renderer.setClearColor( "black", 1 );
   	renderer.setSize( window.innerWidth, window.innerHeight );
   	//renderer.shadowMapEnabled = true;
 
+
+
   	container = document.getElementById( 'container' );
   	container.appendChild( renderer.domElement );
+
+  	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
+
   	window.addEventListener( 'resize', onWindowResize, false );
 
   }
@@ -88,6 +100,7 @@ function onWindowResize() {
 function animate() {
 	requestAnimationFrame( animate );
 	controls.update();
+	stats.update();
 }
 
 function render() {
