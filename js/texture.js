@@ -1,18 +1,34 @@
 var container;
-var camera, controls, scene, renderer;
+var camera, scene, renderer, mapCamera, mapWidth = window.innerWidth/2, mapHeight = window.innerHeight/2;
 
+var clock = new THREE.Clock();
+var keyboard = new THREEx.KeyboardState();
+1
 init();
 animate();
 
-function init() {
-	camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-	camera.position.z = 100;
-	camera.position.y = 20;
 
-	controls = new THREE.OrbitControls( camera );
-	controls.addEventListener( 'change', render );
-	controls.target.set(7.625/2,0,0);
+function init() {
+
 	scene = new THREE.Scene();
+
+	camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
+	cameraDefaults();
+	scene.add(camera);
+
+	// orthographic cameras
+	mapCamera = new THREE.OrthographicCamera(
+	    window.innerWidth / -4,		// Left
+	    window.innerWidth / 4,		// Right
+	    window.innerHeight / 4,		// Top
+	    window.innerHeight / -4,	// Bottom
+	    -500,            			// Near 
+	    10000 );           			// Far 
+	mapCamera.up = new THREE.Vector3(0,0,-1);
+	mapCamera.lookAt( new THREE.Vector3(0,-1,0) );
+	scene.add(mapCamera);
+
+
 	//scene.fog = new THREE.Fog("black");
 
 	var floorTexture = new THREE.ImageUtils.loadTexture( 'images/floor_tile.jpg' );
@@ -49,9 +65,7 @@ function init() {
 	var soupGeom = new THREE.Geometry();
 	var soupLids = new THREE.Geometry();
 
-	//var soupLid = new THREE.Mesh(circleGeometry(2,60));
 	var soupLid = new THREE.Mesh(new THREE.CircleGeometry(2,60));
-	//soupLid.rotation.set(Math.PI,0,0);
 	var soup = new THREE.Mesh( new THREE.CylinderGeometry( 2, 2, 4.5, 60, 1, true ));
 
 	var yRot = 0;
@@ -92,13 +106,11 @@ function init() {
 	var light = new THREE.SpotLight("white");
 	light.position.set(-30,30,30);
 	light.castShadow = true;
-	light.shadowCameraVisible = true;
 	scene.add(light);
 
 	light = new THREE.SpotLight("white");
 	light.position.set(45,30,-100);
 	light.castShadow = true;
-	light.shadowCameraVisible = true;
 	scene.add(light);
 	
 
@@ -107,10 +119,10 @@ function init() {
 	else 
 		alert("No WebGL support detected");
 
-	//renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setClearColor( "black", 1 );
   	renderer.setSize( window.innerWidth, window.innerHeight );
   	renderer.shadowMapEnabled = true;
+	renderer.autoClear = false;
 
   	container = document.getElementById( 'container' );
   	container.appendChild( renderer.domElement );
@@ -120,6 +132,25 @@ function init() {
 	stats.domElement.style.bottom = '0px';
 	stats.domElement.style.zIndex = 100;
 	container.appendChild( stats.domElement );
+
+	var ballTexture = THREE.ImageUtils.loadTexture( 'images/up_green_arrow.png' );
+	var ballMaterial = new THREE.SpriteMaterial( { map: ballTexture, useScreenCoordinates: false, color: 0xff0000 } );
+	sprite = new THREE.Sprite( ballMaterial );
+	sprite.position = camera.position;
+	sprite.scale.set( 16, 16, 1.0 ); // imageWidth, imageHeight
+	scene.add( sprite );
+
+	var jsonLoader = new THREE.JSONLoader();
+	jsonLoader.load( "models/android.js", addAndroidsToScene );
+}
+
+var sprite;
+
+function cameraDefaults() {
+	camera.position.x = 0;
+	camera.position.y = 20;
+	camera.position.z = 100;
+	camera.rotation.set(0,0,0);
 }
 
 function onWindowResize() {
@@ -131,16 +162,86 @@ function onWindowResize() {
   	render();
 }
 
-function animate() {
-	requestAnimationFrame( animate );
-	controls.update();
+function update() {
+	var delta = clock.getDelta(); // seconds.
+	var moveDistance = 100 * delta; // 100 pixels per second
+	var rotateAngle = Math.PI / 4 * delta; 
+
+	if ( keyboard.pressed("W") )
+		camera.translateZ( -moveDistance );
+	if ( keyboard.pressed("S") )
+		camera.translateZ(  moveDistance );
+	if ( keyboard.pressed("Q") )
+		camera.translateX( -moveDistance );
+	if ( keyboard.pressed("E") )
+		camera.translateX(  moveDistance );	
+	
+	if ( keyboard.pressed("Z") )
+	{
+		cameraDefaults();
+	}
+
+	if ( keyboard.pressed("A") )	
+		camera.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
+	if ( keyboard.pressed("D") )
+		camera.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
+	if ( keyboard.pressed("R") )
+		camera.rotateOnAxis( new THREE.Vector3(1,0,0), rotateAngle);
+	if ( keyboard.pressed("F") )
+		camera.rotateOnAxis( new THREE.Vector3(1,0,0), -rotateAngle);
+	
+	if (camera.rotation.x == Math.PI && camera.rotation.z == Math.PI) {	
+		sprite.rotation = Math.PI/2+ (Math.PI/2 - camera.rotation.y);
+	} else if (camera.rotation.x == -Math.PI && camera.rotation.z == -Math.PI) {
+		sprite.rotation = Math.PI/2+ (Math.PI/2 - camera.rotation.y);
+	} else {
+		sprite.rotation = camera.rotation.y;
+	}
+	
 	stats.update();
 }
 
+function animate() {
+	requestAnimationFrame( animate );
+	render();
+	update();
+}
+
 function render() {
+	var w = window.innerWidth, h = window.innerHeight;
+	renderer.setViewport( 0, 0, w, h );
+	renderer.clear();
 	renderer.render( scene, camera );
+
+	renderer.setViewport( 10, h - mapHeight - 10, mapWidth, mapHeight );
+	renderer.render( scene, mapCamera );
 }
 
 function loadAndRender(filename) {
 	return THREE.ImageUtils.loadTexture(filename, {}, render);
+}
+
+function addAndroidsToScene( geometry, materials ) 
+{
+	var androids = new THREE.Geometry();
+	var android = new THREE.Mesh( geometry);
+	android.scale.set(1,1,1);
+	var light;
+	var zOffset = -100;
+	for (var i = 0; i< 10; i++) {
+		for (var j = 0; j< 10; j++) {
+			if (i%2 == 0 && j%2 == 0) {
+				light = new THREE.SpotLight("white");
+				light.position.set(i*10,40,-j*10+zOffset);
+				light.target.position.set(i*10,0,-j*10+zOffset);
+				scene.add(light);
+			}
+
+			android.position.set(i*10,0,-j*10+zOffset);
+			THREE.GeometryUtils.merge( androids, android );
+		}
+	}
+	var androidsMesh = new THREE.Mesh(androids, new THREE.MeshFaceMaterial( materials ));
+	scene.add(androidsMesh);
+	
 }
