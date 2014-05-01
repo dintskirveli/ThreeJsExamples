@@ -1,9 +1,9 @@
 var container;
-var camera, scene, renderer, mapCamera, mapWidth = window.innerWidth/2, mapHeight = window.innerHeight/2;
+var camera, scene, renderer, mapCamera, mapWidth = window.innerWidth/4, mapHeight = window.innerHeight/4;
 
 var clock = new THREE.Clock();
 var keyboard = new THREEx.KeyboardState();
-1
+
 init();
 animate();
 
@@ -42,13 +42,10 @@ function init() {
 	floor.receiveShadow = true;
 	scene.add(floor);
 
-	var cereals = new THREE.Geometry();
-	var cereal = new THREE.Mesh( new THREE.CubeGeometry(7.625,11,2.75) );
+	//var cereals = new THREE.Geometry();
+	//var cereal = new THREE.Mesh( new THREE.CubeGeometry(7.625,11,2.75) );
 
-	for (var i = 0; i < 10; i++) {
-		cereal.position.set(0,11/2,-i*4);
-		THREE.GeometryUtils.merge( cereals, cereal );
-	}
+
 	var materials = [
 	    new THREE.MeshPhongMaterial( { map: loadAndRender('images/cereal_left.jpg') } ),
 	    new THREE.MeshPhongMaterial( { map: loadAndRender('images/cereal_right.jpg') } ),
@@ -57,10 +54,18 @@ function init() {
 	    new THREE.MeshPhongMaterial( { map: loadAndRender('images/cereal_front.jpg') } ),
 	    new THREE.MeshPhongMaterial( { map: loadAndRender('images/cereal_back.jpg') } ) 
 	];
-	var cerealsMesh = new THREE.Mesh(cereals, new THREE.MeshFaceMaterial(materials));
-	cerealsMesh.castShadow = true;
-	cerealsMesh.receiveShadow = true;
-	scene.add(cerealsMesh);
+	for (var i = 0; i < 100; i++) {
+		var cereal = new THREE.Mesh( new THREE.CubeGeometry(7.625,11,2.75), new THREE.MeshFaceMaterial(materials) );
+
+		cereal.position.set(0,11/2,-i*4);
+		//THREE.GeometryUtils.merge( cereals, cereal );
+		scene.add(cereal);
+	}
+
+	//var cerealsMesh = new THREE.Mesh(cereals, new THREE.MeshFaceMaterial(materials));
+	//cerealsMesh.castShadow = true;
+	//cerealsMesh.receiveShadow = true;
+	//scene.add(cerealsMesh);
 
 	var soupGeom = new THREE.Geometry();
 	var soupLids = new THREE.Geometry();
@@ -73,20 +78,22 @@ function init() {
 	var xoff = 7;
 
 	for (var i = 0; i < 10; i++) {
-		for (var j = 0; j < 5; j++) {
+		for (var j = 0; j < 10; j++) {
 			x = xoff+j*4.5;
-			yRot = Math.random() * Math.PI;
-			soup.position.set(x,4.5/2,-5*i);
-			soup.rotation.set(0, yRot, 0);
-			THREE.GeometryUtils.merge( soupGeom, soup );
+			for (var k =0; k<10; k++) {
+				yRot = Math.random() * Math.PI;
+				soup.position.set(x,4.5/2+4.5*(k),-5*i);
+				soup.rotation.set(0, yRot, 0);
+				THREE.GeometryUtils.merge( soupGeom, soup );
 
-			soupLid.position.set(x,4.5,-5*i);
-			soupLid.rotation.set(3*Math.PI/2,0,yRot);
-			THREE.GeometryUtils.merge( soupLids, soupLid );
+				soupLid.position.set(x,4.5*(k+1),-5*i);
+				soupLid.rotation.set(3*Math.PI/2,0,yRot);
+				THREE.GeometryUtils.merge( soupLids, soupLid );
 
-			soupLid.position.set(x,0,-5*i);
-			//soupLid.rotation.set(0,yRot,0);
-			THREE.GeometryUtils.merge( soupLids, soupLid );
+				soupLid.position.set(x,4.5*(k),-5*i);
+				//soupLid.rotation.set(0,yRot,0);
+				THREE.GeometryUtils.merge( soupLids, soupLid );
+			}
 		}
 	}
 	
@@ -99,19 +106,28 @@ function init() {
 	soupCanMesh.castShadow = true;
 	soupCanMesh.receiveShadow = true;
 	scene.add(soupCanMesh);
-/*
-	light = new THREE.AmbientLight( "white" );
+
+	var light = new THREE.AmbientLight( "white" );
 	scene.add( light );
-	*/
-	var light = new THREE.SpotLight("white");
+	
+ 	light = new THREE.SpotLight("white");
 	light.position.set(-30,30,30);
 	light.castShadow = true;
 	scene.add(light);
 
-	light = new THREE.SpotLight("white");
+	/*light = new THREE.SpotLight("white");
 	light.position.set(45,30,-100);
 	light.castShadow = true;
 	scene.add(light);
+	var light = new THREE.AmbientLight("white");
+	scene.add(light);*/
+
+	/*light = new THREE.SpotLight("white");
+	light.position.set(0,50,0);
+	light.target.position.set(0,0,0);
+	light.castShadow = true;
+	light.shadowCameraVisible = true;
+	scene.add(light);*/
 	
 
 	if ( Detector.webgl )
@@ -140,8 +156,8 @@ function init() {
 	sprite.scale.set( 16, 16, 1.0 ); // imageWidth, imageHeight
 	scene.add( sprite );
 
-	var jsonLoader = new THREE.JSONLoader();
-	jsonLoader.load( "models/android.js", addAndroidsToScene );
+	//var jsonLoader = new THREE.JSONLoader();
+	//jsonLoader.load( "models/android.js", addAndroidsToScene );
 }
 
 var sprite;
@@ -230,18 +246,22 @@ function addAndroidsToScene( geometry, materials )
 	var zOffset = -100;
 	for (var i = 0; i< 10; i++) {
 		for (var j = 0; j< 10; j++) {
-			if (i%2 == 0 && j%2 == 0) {
+			/*if (i%4 == 0 && j%4 == 0) {
 				light = new THREE.SpotLight("white");
-				light.position.set(i*10,40,-j*10+zOffset);
+				light.position.set(i*10,50,-j*10+zOffset);
 				light.target.position.set(i*10,0,-j*10+zOffset);
+				light.castShadow = true;
+				light.shadowCameraVisible = true;
 				scene.add(light);
-			}
+			}*/
 
 			android.position.set(i*10,0,-j*10+zOffset);
 			THREE.GeometryUtils.merge( androids, android );
 		}
 	}
 	var androidsMesh = new THREE.Mesh(androids, new THREE.MeshFaceMaterial( materials ));
+	//androidsMesh.castShadow = true;
+	//androidsMesh.receiveShadow = true;
 	scene.add(androidsMesh);
 	
 }
