@@ -1,5 +1,7 @@
 ObjectJSONLoader.prototype = Object.create( JSONLoader.prototype );
 
+var ALL_OBJECTS = []
+
 function ObjectJSONLoader(urls, scene) {
 	this.urls = urls;
 	this.scene = scene;
@@ -27,6 +29,10 @@ ObjectJSONLoader.prototype.config = function() {
 function loadAndRender(filename) {
 	//not calling render here
 	return THREE.ImageUtils.loadTexture(filename, {});
+}
+
+function getUserDataObject(json) {
+	return {"sku" : json.sku}
 }
 
 ObjectJSONLoader.prototype.baseLoadObject = function(department, quantity, width, length, height) {
@@ -144,7 +150,12 @@ ObjectJSONLoader.prototype.loadCube = function(json) {
 	var cubesMesh = new THREE.Mesh(cubes, new THREE.MeshFaceMaterial(materials));
 	cubesMesh.castShadow = true;
 	cubesMesh.receiveShadow = true;
+
+	cubesMesh.userData = json;
+	console.log(cubesMesh);
+
 	this.scene.add(cubesMesh);
+	ALL_OBJECTS.push(cubesMesh);
 }
 
 ObjectJSONLoader.prototype.loadCylinder = function(json) {
@@ -201,5 +212,10 @@ ObjectJSONLoader.prototype.loadCylinder = function(json) {
 	var bodiesMesh = new THREE.Mesh(bodies, new THREE.MeshPhongMaterial( { map: loadAndRender(json.materials.label) } ));
 	bodiesMesh.castShadow = true;
 	bodiesMesh.receiveShadow = true;
+
+	bodiesMesh.userData = json;
+	console.log(bodiesMesh);
+	
 	scene.add(bodiesMesh);
+	ALL_OBJECTS.push(bodiesMesh);
 }

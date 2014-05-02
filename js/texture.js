@@ -91,7 +91,7 @@ function init() {
 				THREE.GeometryUtils.merge( soupLids, soupLid );
 
 				soupLid.position.set(x,4.5*(k),-5*i);
-				//soupLid.rotation.set(0,yRot,0);
+				soupLid.rotation.set(0,yRot,0);
 				THREE.GeometryUtils.merge( soupLids, soupLid );
 			}
 		}

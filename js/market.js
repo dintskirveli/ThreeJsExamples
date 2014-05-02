@@ -1,4 +1,4 @@
-var camera, scene, renderer, stats, container, controls;
+var camera, scene, renderer, stats, container, controls, projector;
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 var clock = new THREE.Clock();
@@ -23,6 +23,8 @@ function init() {
 	rendererSetup();
 	statsSetup();
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	projector = new THREE.Projector();
+	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 }
 
 function lightsSetup() {
@@ -78,4 +80,38 @@ function render() {
 	//renderer.setViewport( 0, 0, w, h );
 	//renderer.clear();
 	renderer.render( scene, camera );
+}
+
+function onDocumentMouseDown( event ) {
+
+	event.preventDefault();
+	console.log("ray casting...");
+	var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+	projector.unprojectVector( vector, camera );
+
+	var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+	var intersects = raycaster.intersectObjects( ALL_OBJECTS );
+
+	if ( intersects.length > 0 ) {
+		console.log(intersects[ 0 ]);
+		/*
+		intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+
+		var particle = new THREE.Sprite( particleMaterial );
+		particle.position = intersects[ 0 ].point;
+		particle.scale.x = particle.scale.y = 16;
+		scene.add( particle );
+	*/
+
+	}
+
+	/*
+	// Parse all the faces
+	for ( var i in intersects ) {
+
+		intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
+
+	}
+	*/
 }
