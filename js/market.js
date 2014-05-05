@@ -1,30 +1,90 @@
-var camera, scene, renderer, stats, container, controls, projector;
+var camera, scene, renderer, stats, container, controls, projector, composer;
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
 var clock = new THREE.Clock();
 var keyboard = new THREEx.KeyboardState();
+var cylinderThing;
+
+var WORLD_RADIUS = 1000;
 
 init();
 animate();
 
-function init() {
-	container = document.createElement( 'div' );
-	document.body.appendChild(container);
+var vblur;
 
+function init() {
+	container = document.getElementById( 'container' );
+	//document.body.appendChild(container);
+	rendererSetup();
 	scene = new THREE.Scene();
 	mainCamSetup();
 
-	new ConfigLoader("test.json", scene).config();
+	new ConfigLoader("test2.json", scene).config();
 
-	floorSetup(scene);
+	//floorSetup(scene);
 
-	lightsSetup();
+	//lightsSetup();
 
-	rendererSetup();
+	//test();
+/*
+	var bluriness = 10;
+
+	composer = new THREE.EffectComposer( renderer );
+	composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+	hblur = new THREE.ShaderPass( THREE.HorizontalBlurShader );
+	//hblur.renderToScreen = true;
+	hblur.uniforms[ "h" ].value = bluriness / WIDTH;
+	composer.addPass( hblur );
+
+	vblur = new THREE.ShaderPass( THREE.VerticalBlurShader );
+	// set this shader pass to render to screen so we can see the effects
+	vblur.renderToScreen = true;
+	vblur.uniforms[ "v" ].value = bluriness / HEIGHT;
+	composer.addPass( vblur );
+
+	*/
 	statsSetup();
-	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	//controls = new THREE.OrbitControls( camera, renderer.domElement );
 	projector = new THREE.Projector();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+}
+
+var CUR_INDEX = 0;
+
+function update() {
+	var delta = clock.getDelta(); // seconds.
+	var moveDistance = 100 * delta; // 100 pixels per second
+	var rotateAngle = Math.PI / 4 * delta; 
+
+	if ( keyboard.pressed("W") ) {
+		console.log("ehrmergerd key pressed");
+		cylinderThing.rotation.x -= rotateAngle;
+	} else if ( keyboard.pressed("S") ) {
+		console.log("ehrmergerd key pressed");
+		cylinderThing.rotation.x += rotateAngle;
+	} else if ( keyboard.pressed("P") ) {
+		console.log(ALL_OBJECTS);
+		/*for (var i in ALL_OBJECTS) {
+			var vector = new THREE.Vector3();
+	
+			
+		}*/
+	}else if ( keyboard.pressed("T") ) {
+		var start = { x : cylinderThing.rotation.x };
+		var finish = { x : cylinderThing.rotation.x- Math.PI };
+
+		var tween = new TWEEN.Tween(start).to(finish, 2000);
+		tween.easing(TWEEN.Easing.Quartic.InOut)
+		tween.onUpdate(function(){
+		    cylinderThing.rotation.x = start.x
+		});
+
+		tween.start();
+	}
+
+	TWEEN.update();
+	
 }
 
 function lightsSetup() {
@@ -39,6 +99,7 @@ function rendererSetup() {
 	//renderer.autoClear = false;
 	renderer.setClearColor( "black", 1 );
 	container.appendChild(renderer.domElement);
+	renderer.shadowMapEnabled = true;
 }
 
 function statsSetup() {
@@ -54,13 +115,31 @@ function animate() {
 	requestAnimationFrame( animate );
 	render();
 	stats.update();
-	controls.update();
+	update();
+	render();
+	//composer.render();
+	//controls.update();
 }
 
 function mainCamSetup() {
 	camera = new THREE.PerspectiveCamera(30, getAspect(), 1, 10000);
-	camera.position.set(0, 20, 150);
-	camera.rotation.set(0,0,0);
+	var y =  WORLD_RADIUS + 25
+	camera.position.set(0,y, 0*-WORLD_RADIUS);
+	//camera.position.set(0, 0, -500);
+
+	var spotLight = new THREE.SpotLight( 0xffffff );
+	spotLight.position.set( 0, WORLD_RADIUS+200, -200 );
+	console.log("lights...")
+	spotLight.target.position.set( 0, WORLD_RADIUS, 0 );
+	//spotLight.shadowCameraVisible = true;
+	spotLight.castShadow = true;
+	spotLight.intensity = 2;
+	scene.add(spotLight)
+
+	//camera.rotation.set(0,Math.PI/2,0);
+	//camera.up = new THREE.Vector3(1,1,1);
+	camera.up = new THREE.Vector3(0,1,0);
+	camera.lookAt( new THREE.Vector3(0,y,1) );
 	scene.add(camera);
 }
 
@@ -74,17 +153,24 @@ function onWindowResize() {
   	renderer.setSize( WIDTH, HEIGHT );
   	render();
 }
-
+//var BLUR = false;
 function render() {
 
 	//renderer.setViewport( 0, 0, w, h );
 	//renderer.clear();
 	renderer.render( scene, camera );
+//	if (BLUR) {
+//		composer.render()	
+//	}
+	
 }
+
+var _foreground_meshes = [];
 
 function onDocumentMouseDown( event ) {
 
 	event.preventDefault();
+
 	console.log("ray casting...");
 	var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
 	projector.unprojectVector( vector, camera );
@@ -94,24 +180,51 @@ function onDocumentMouseDown( event ) {
 	var intersects = raycaster.intersectObjects( ALL_OBJECTS );
 
 	if ( intersects.length > 0 ) {
-		console.log(intersects[ 0 ]);
-		/*
-		intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
-
-		var particle = new THREE.Sprite( particleMaterial );
-		particle.position = intersects[ 0 ].point;
-		particle.scale.x = particle.scale.y = 16;
-		scene.add( particle );
-	*/
-
+		var object = intersects[ 0 ].object.userData;
+		console.log(object);
+		_foreground_meshes = loadInspectionObject(object)
+		console.log(_foreground_meshes)
+		showInspectionHud(object)
 	}
+}
 
-	/*
-	// Parse all the faces
-	for ( var i in intersects ) {
+function showInspectionHud(object) {
+	var hud = $('.inspectionHud')
+	hud.find('#itemName').text(object.name)
+	hud.find('#itemPrice').text('$'+object.price)
+	hud.show();
+}
 
-		intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
-
+function hideInspectionHud() {
+	$('.inspectionHud').hide()
+	for (index in _foreground_meshes) {
+		camera.remove(_foreground_meshes[index]);
 	}
-	*/
+	_foreground_meshes = []
+}
+
+function animateToDepartment(s) {
+	var index = _departmentsToIndexes[s]
+	animateToIndex(index);
+}
+
+function animateToIndex(index) {
+
+	var stepBack = _intervalAngle/3
+	var angle = -Math.PI/2-index*_intervalAngle + stepBack
+
+	var start = { x : cylinderThing.rotation.x };
+	var finish = { x : angle};
+
+	var tween = new TWEEN.Tween(start).to(finish, 2000);
+	tween.easing(TWEEN.Easing.Quartic.InOut)
+	tween.onUpdate(function(){
+	    cylinderThing.rotation.x = start.x
+	});
+
+	tween.start();	
+}
+
+function departmentClick(s) {
+	animateToDepartment(s);
 }

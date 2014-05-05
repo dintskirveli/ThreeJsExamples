@@ -1,6 +1,6 @@
 ObjectJSONLoader.prototype = Object.create( JSONLoader.prototype );
 
-var ALL_OBJECTS = []
+
 
 function ObjectJSONLoader(urls, scene) {
 	this.urls = urls;
@@ -26,10 +26,7 @@ ObjectJSONLoader.prototype.config = function() {
 	}
 }
 
-function loadAndRender(filename) {
-	//not calling render here
-	return THREE.ImageUtils.loadTexture(filename, {});
-}
+
 
 function getUserDataObject(json) {
 	return {"sku" : json.sku}
