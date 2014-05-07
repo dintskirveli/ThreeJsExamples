@@ -154,11 +154,11 @@ function rotateInspectionMeshes(dx, dy) {
 
 	
 	for (index in _foreground_meshes) {
-		var pos = _foreground_meshes[index].position
-		var pos = new THREE.Vector3(pos.x, pos.y, pos.z);
-	    _foreground_meshes[index].rotation.y += dx / 100;
-    	_foreground_meshes[index].rotation.x += dy / 100;
-    	_foreground_meshes[index].position = pos;
+		//var pos = _foreground_meshes[index].position
+		//var pos = new THREE.Vector3(pos.x, pos.y, pos.z);
+		_foreground_meshes[index].rotation.y += dx / 100;
+    		_foreground_meshes[index].rotation.x += dy / 100;
+    		//_foreground_meshes[index].position = pos;
 	}
 }
 
