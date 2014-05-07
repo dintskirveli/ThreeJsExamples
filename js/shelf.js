@@ -1,5 +1,5 @@
 var departmentsToShelfSpaceUsage = {};
-var numberOfDepartments = 0;
+var _numberOfDepartments = 0;
 var extraShelves = 0;
 
 var ALL_OBJECTS = []
@@ -58,6 +58,7 @@ function createShelves(scene, body, departmentList, config) {
 	var shelfWallMesh = new THREE.Mesh(shelfWalls);
 
 	var numObjects = departmentList.length;
+	_numberOfDepartments = numObjects;
 	var intervalAngle = Math.PI*2/numObjects;
 	_intervalAngle = intervalAngle
 	for (var i = 0; i<numObjects;i++) {
@@ -197,6 +198,7 @@ function loadAndRender(filename) {
 }
 
 function loadInspectionObject(object) {
+	var inspectionZ = -30;
 	if (object.type == 'cube') {
 		var meshes = loadCube(object)
 		//console.log(meshes);
@@ -204,9 +206,9 @@ function loadInspectionObject(object) {
 			var mesh = meshes[index];
 			mesh.position.set(0,0,0)
 			camera.add(mesh)
-			mesh.position.z = -50;
-			mesh.position.x = -getShelfLength()/2+object.dimensions.width/2
-			mesh.position.y = -object.dimensions.height/2
+			mesh.position.z = inspectionZ;
+			//mesh.position.x = 0*object.dimensions.width/2
+			//mesh.position.y = 0*-object.dimensions.height/2
 			mesh.rotation.y = -Math.PI/2;
 		}
 		return meshes;
@@ -216,9 +218,9 @@ function loadInspectionObject(object) {
 		for (index in meshes) {
 			var mesh = meshes[index];
 			camera.add(mesh)
-			mesh.position.z = -50;
-			mesh.position.x = -getShelfLength()/2+(object.dimensions.radius)
-			mesh.position.y = -object.dimensions.height/2
+			mesh.position.z = inspectionZ;
+			//mesh.position.x = (object.dimensions.radius)
+			//mesh.position.y = 0*-object.dimensions.height/2
 			mesh.rotation.y = -Math.PI/2;
 		}
 		return meshes;
@@ -241,10 +243,9 @@ function loadCube(json, body, angle, pos) {
 		//console.log(images[i]);
 
 		var texture = THREE.ImageUtils.loadTexture(images[i], {});
-		/*texture.anisotropy = 4;
-		texture.minFilter = THREE.LinearFilter;
-		texture.magFilter = THREE.LinearMipMapNearestFilter;
-		console.log(texture)*/
+		if (inspection) {
+			texture.anisotropy = 16;
+		}
 		materials.push(new THREE.MeshPhongMaterial( { map: texture } ));
 	}
 	var quantity = json.quantity;
@@ -263,7 +264,6 @@ function loadCube(json, body, angle, pos) {
 
 
 	for (var i = 0; i < end; i++) {
-		//cube.position.set(0,dims.height/2,-i*(dims.width*1.5));
 		
 		cube.position =  new THREE.Vector3(pos[i].x,pos[i].y,pos[i].z);
 
@@ -271,11 +271,12 @@ function loadCube(json, body, angle, pos) {
 		cube.position.y = cube.position.y + dims.height/2;
 		cube.position.z = cube.position.z + dims.width/2-getShelfLength()/2;
 		cube.rotation.set(0,Math.PI/2,0);
+		if (inspection) {
+			cube.position = pos[i];
+		} 
 		THREE.GeometryUtils.merge( cubes, cube );
 	}
 
-	console.log("pos before")
-	console.log(pos)
 	var cubesMesh = new THREE.Mesh(cubes, new THREE.MeshFaceMaterial(materials));
 	cubesMesh.castShadow = true;
 	cubesMesh.receiveShadow = true;
@@ -297,15 +298,9 @@ function loadCube(json, body, angle, pos) {
 
 	var usedVector = new THREE.Vector3(0,0,0);
 	var lastPos = pos[pos.length-1];
-	console.log("lastPos")
-	console.log(lastPos)
 	usedVector.z = lastPos.z + dims.width + getPaddingBetweenObjects();
 	usedVector.y = Math.floor((lastPos.y-getShelfHeight())/getShelfDistance()) + 1;
-	//console.log("height index: "+usedVector.y )
-	//usedVector.z = lastPos.z + dims.length + getPaddingBetweenObjects();
-	console.log("output usedVector");
-	console.log(usedVector)
-
+	
 	return usedVector;
 }
 
@@ -351,17 +346,26 @@ function loadCylinder(json, world, angle, pos) {
 		position.y = position.y + height/2;
 		body.position = position;
 		body.rotation.set(0, yRot, 0);
+		if (inspection) {
+			body.position = pos[i]
+		}
 		THREE.GeometryUtils.merge( bodies, body );
 
 		
 		position.y = position.y + height/2;
 		lid.position = position;
 		lid.rotation.set(3*Math.PI/2,0,yRot + Math.PI/2 * Math.random());
+		
+		if (inspection) {
+			lid.position = pos[i]
+			lid.position.y = lid.position.y + height/2
+		}
 		THREE.GeometryUtils.merge( lids, lid );
 
 		if (inspection) {
-			position.y = position.y - height;
-			lid.position = position;
+			//position.y = position.y - height;
+			lid.position = pos[i]
+			lid.position.y = lid.position.y - height
 			lid.rotation.set(Math.PI/2,0,yRot);
 			THREE.GeometryUtils.merge( lids, lid );
 		}

@@ -1,6 +1,4 @@
-var camera, scene, renderer, stats, container, controls, projector, composer;
-var WIDTH = window.innerWidth;
-var HEIGHT = window.innerHeight;
+var camera, scene, renderer, container, projector, composer;
 var clock = new THREE.Clock();
 var keyboard = new THREEx.KeyboardState();
 var cylinderThing;
@@ -10,80 +8,57 @@ var WORLD_RADIUS = 1000;
 init();
 animate();
 
-var vblur;
-
 function init() {
 	container = document.getElementById( 'container' );
-	//document.body.appendChild(container);
 	rendererSetup();
 	scene = new THREE.Scene();
 	mainCamSetup();
 
 	new ConfigLoader("test2.json", scene).config();
 
-	//floorSetup(scene);
-
-	//lightsSetup();
-
-	//test();
-/*
-	var bluriness = 10;
-
-	composer = new THREE.EffectComposer( renderer );
-	composer.addPass( new THREE.RenderPass( scene, camera ) );
-
-	hblur = new THREE.ShaderPass( THREE.HorizontalBlurShader );
-	//hblur.renderToScreen = true;
-	hblur.uniforms[ "h" ].value = bluriness / WIDTH;
-	composer.addPass( hblur );
-
-	vblur = new THREE.ShaderPass( THREE.VerticalBlurShader );
-	// set this shader pass to render to screen so we can see the effects
-	vblur.renderToScreen = true;
-	vblur.uniforms[ "v" ].value = bluriness / HEIGHT;
-	composer.addPass( vblur );
-
-	*/
-	statsSetup();
-	//controls = new THREE.OrbitControls( camera, renderer.domElement );
 	projector = new THREE.Projector();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+	window.addEventListener( 'resize', onWindowResize, false );
 }
 
 var CUR_INDEX = 0;
+var TWEENING = false
+
+function tweenCallback() {
+	console.log("done tweening"); 
+	TWEENING = false;
+}
 
 function update() {
-	var delta = clock.getDelta(); // seconds.
-	var moveDistance = 100 * delta; // 100 pixels per second
-	var rotateAngle = Math.PI / 4 * delta; 
-
-	if ( keyboard.pressed("W") ) {
-		console.log("ehrmergerd key pressed");
-		cylinderThing.rotation.x -= rotateAngle;
-	} else if ( keyboard.pressed("S") ) {
-		console.log("ehrmergerd key pressed");
-		cylinderThing.rotation.x += rotateAngle;
-	} else if ( keyboard.pressed("P") ) {
-		console.log(ALL_OBJECTS);
-		/*for (var i in ALL_OBJECTS) {
-			var vector = new THREE.Vector3();
-	
-			
-		}*/
-	}else if ( keyboard.pressed("T") ) {
-		var start = { x : cylinderThing.rotation.x };
-		var finish = { x : cylinderThing.rotation.x- Math.PI };
-
-		var tween = new TWEEN.Tween(start).to(finish, 2000);
-		tween.easing(TWEEN.Easing.Quartic.InOut)
-		tween.onUpdate(function(){
-		    cylinderThing.rotation.x = start.x
-		});
-
-		tween.start();
-	}
 
 	TWEEN.update();
+
+	if (_inHud) {
+		return;
+	}
+
+	if ( keyboard.pressed("N") ) {
+		if (!TWEENING) {
+			TWEENING = true;
+			CUR_INDEX++;
+			if (CUR_INDEX >= _numberOfDepartments) {
+				CUR_INDEX = 0;
+			}
+			animateToIndex(CUR_INDEX, tweenCallback);
+		}
+	} else if ( keyboard.pressed("P") ) {
+		if (!TWEENING) {
+			TWEENING = true;
+			CUR_INDEX--;
+			if (CUR_INDEX < 0) {
+				CUR_INDEX = _numberOfDepartments-1;
+			}
+			animateToIndex(CUR_INDEX, tweenCallback);
+		}
+	}
+
 	
 }
 
@@ -94,101 +69,127 @@ function lightsSetup() {
 
 function rendererSetup() {
 	renderer = new THREE.WebGLRenderer( {antialias:true} );
-	renderer.setSize(WIDTH, HEIGHT);
-  	//renderer.shadowMapEnabled = true;
+	renderer.setSize(window.innerWidth, window.innerHeight);
+  	renderer.shadowMapEnabled = true;
 	//renderer.autoClear = false;
 	renderer.setClearColor( "black", 1 );
 	container.appendChild(renderer.domElement);
 	renderer.shadowMapEnabled = true;
 }
 
-function statsSetup() {
-	window.addEventListener( 'resize', onWindowResize, false );
-	stats = new Stats();
-	stats.domElement.style.position = 'absolute';
-	stats.domElement.style.bottom = '0px';
-	stats.domElement.style.zIndex = 100;
-	container.appendChild( stats.domElement );
-}
-
 function animate() {
 	requestAnimationFrame( animate );
-	render();
-	stats.update();
 	update();
 	render();
-	//composer.render();
-	//controls.update();
 }
 
 function mainCamSetup() {
 	camera = new THREE.PerspectiveCamera(30, getAspect(), 1, 10000);
 	var y =  WORLD_RADIUS + 25
-	camera.position.set(0,y, 0*-WORLD_RADIUS);
+	camera.position.set(0,y, 0);
 	//camera.position.set(0, 0, -500);
 
 	var spotLight = new THREE.SpotLight( 0xffffff );
 	spotLight.position.set( 0, WORLD_RADIUS+200, -200 );
 	console.log("lights...")
 	spotLight.target.position.set( 0, WORLD_RADIUS, 0 );
-	//spotLight.shadowCameraVisible = true;
+
 	spotLight.castShadow = true;
 	spotLight.intensity = 2;
 	scene.add(spotLight)
 
-	//camera.rotation.set(0,Math.PI/2,0);
-	//camera.up = new THREE.Vector3(1,1,1);
 	camera.up = new THREE.Vector3(0,1,0);
 	camera.lookAt( new THREE.Vector3(0,y,1) );
 	scene.add(camera);
 }
 
 function getAspect() {
-	return WIDTH/HEIGHT;
+	return window.innerWidth/window.innerHeight;
 }
 
 function onWindowResize() {
   	camera.aspect = getAspect();
   	camera.updateProjectionMatrix();
-  	renderer.setSize( WIDTH, HEIGHT );
+  	renderer.setSize( window.innerWidth, window.innerHeight );
   	render();
 }
-//var BLUR = false;
-function render() {
 
-	//renderer.setViewport( 0, 0, w, h );
-	//renderer.clear();
+function render() {
 	renderer.render( scene, camera );
-//	if (BLUR) {
-//		composer.render()	
-//	}
-	
 }
 
 var _foreground_meshes = [];
 
+var _inHud = false;
+var _rotationMouseDown = false;
+var _mouseX = 0
+var _mouseY = 0;
+
 function onDocumentMouseDown( event ) {
 
 	event.preventDefault();
+	if (_inHud) {
+        _rotationMouseDown = true;
+        _mouseX = event.clientX;
+        _mouseY = event.clientY;
+	} else {
+		console.log("ray casting...");
+		var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+		projector.unprojectVector( vector, camera );
 
-	console.log("ray casting...");
-	var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
-	projector.unprojectVector( vector, camera );
+		var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 
-	var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+		var intersects = raycaster.intersectObjects( ALL_OBJECTS );
 
-	var intersects = raycaster.intersectObjects( ALL_OBJECTS );
-
-	if ( intersects.length > 0 ) {
-		var object = intersects[ 0 ].object.userData;
-		console.log(object);
-		_foreground_meshes = loadInspectionObject(object)
-		console.log(_foreground_meshes)
-		showInspectionHud(object)
+		if ( intersects.length > 0 ) {
+			var object = intersects[ 0 ].object.userData;
+			_foreground_meshes = loadInspectionObject(object);
+			showInspectionHud(object)
+		}
 	}
 }
 
+function rotateInspectionMeshes(dx, dy) {
+	//console.log(dx,dy)
+
+	
+	for (index in _foreground_meshes) {
+		var pos = _foreground_meshes[index].position
+		var pos = new THREE.Vector3(pos.x, pos.y, pos.z);
+	    _foreground_meshes[index].rotation.y += dx / 100;
+    	_foreground_meshes[index].rotation.x += dy / 100;
+    	_foreground_meshes[index].position = pos;
+	}
+}
+
+function onDocumentMouseMove(event) {
+	if (_inHud && _rotationMouseDown) {
+		event.preventDefault();
+
+        var deltaX = event.clientX - _mouseX;
+        var deltaY = event.clientY - _mouseY;
+        _mouseX = event.clientX;
+        _mouseY = event.clientY;
+        rotateInspectionMeshes(deltaX, deltaY);
+	}
+}
+
+function onDocumentMouseUp(event) {
+	if (_inHud) {
+		event.preventDefault();
+        _rotationMouseDown = false;
+	}
+}
+
+var _wallMesh;
+
 function showInspectionHud(object) {
+	_inHud = true;
+	var wallGeo = new THREE.PlaneGeometry(WORLD_RADIUS,WORLD_RADIUS,1,1);
+	var wallMaterial = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0.75, color : "black" } );
+	_wallMesh = new THREE.Mesh(wallGeo, wallMaterial);
+	camera.add(_wallMesh);
+	_wallMesh.position.z = -75;
 	var hud = $('.inspectionHud')
 	hud.find('#itemName').text(object.name)
 	hud.find('#itemPrice').text('$'+object.price)
@@ -200,7 +201,9 @@ function hideInspectionHud() {
 	for (index in _foreground_meshes) {
 		camera.remove(_foreground_meshes[index]);
 	}
+	camera.remove(_wallMesh);
 	_foreground_meshes = []
+	_inHud = false;
 }
 
 function animateToDepartment(s) {
@@ -208,7 +211,8 @@ function animateToDepartment(s) {
 	animateToIndex(index);
 }
 
-function animateToIndex(index) {
+function animateToIndex(index, callback) {
+	CUR_INDEX = index;
 
 	var stepBack = _intervalAngle/3
 	var angle = -Math.PI/2-index*_intervalAngle + stepBack
@@ -222,9 +226,14 @@ function animateToIndex(index) {
 	    cylinderThing.rotation.x = start.x
 	});
 
+	if(callback != null) {
+		tween.onComplete(callback);
+	}
+
 	tween.start();	
 }
 
 function departmentClick(s) {
+	if (_inHud) return;
 	animateToDepartment(s);
 }

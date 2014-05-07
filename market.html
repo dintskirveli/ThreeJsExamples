@@ -50,18 +50,26 @@
 		height : auto;
 		background : white; 
 		position: absolute;
-		opacity: 0.5;
+		background: rgba(255, 255, 255, 0);
 		top:0px;
 		left:0px;
 		margin-left: 15px;
 		color: white;
 		font-weight:bold;
 		font-family: helvetica;
-		background-color : black; 
 		padding: 5px;
 		display : none;
 
 	}
+
+	.inspectionText {
+		font-size: 5em;
+	}
+
+	.inspectionButton {
+		font-size: 3em;
+	}
+
 	</style>
 </head>
 
@@ -75,32 +83,24 @@
 		</div>
 		
 		<div class='inspectionHud'>
-			<h1 id='itemName'>test</h1>
-			<h1 id='itemPrice'>tert</h1>
-			<button onclick="hideInspectionHud()">Hide</button>
+			<b class='inspectionText' id='itemName'></b>
+			<br>
+			<b class='inspectionText' id='itemPrice'></b>
+			<br>
+			<button class='inspectionButton' onclick="hideInspectionHud()">Back</button>
 		</div>  
 	
 	</div>		
 
 	<script src="js/Three62.js"></script>
-	<script src="js/OrbitControls.js"></script>
 	<script src="js/THREEx.KeyboardState.js"></script>
 	<script src="js/Stats.js"></script>
 	<script src="js/shelf.js"></script>
 	<script src="js/JSONLoader.js"></script>
 	<script src="js/ConfigLoader.js"></script>
-
 	<script src='js/tween.min.js'></script>
 	<script src='js/jquery.js'></script>
 	<script src="js/helvetica.js"></script>
-	<script src="js/CopyShader.js"></script>
-	<script src="js/HorizontalBlurShader.js"></script>
-	<script src="js/VerticalBlurShader.js"></script>
-	
-	<script src="js/EffectComposer.js"></script>
-	<script src="js/RenderPass.js"></script>
-	<script src="js/MaskPass.js"></script>
-	<script src="js/ShaderPass.js"></script>
 	<script src="js/market.js"></script>
 
 
