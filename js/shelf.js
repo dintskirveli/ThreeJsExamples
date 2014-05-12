@@ -33,29 +33,21 @@ function getNumShelves() {
 function getAisleWidth() {
 	return 6*12;
 }
-
+/*
 function getShelfWallHeight() {
 	return (getNumShelves()-1)*(getShelfDistance()+getShelfHeight());
-}
+}*/
 
 var _departmentsToIndexes = {}
 var _intervalAngle;
 
 function createShelves(scene, body, departmentList, config) {
-	//var departmentList = departmentList.reverse()
 	var geometries = new THREE.Geometry();
 	var geometry = new THREE.CubeGeometry(
 		getShelfWidth(), 
 		getShelfHeight(), 
 		getShelfLength());
 	var shelvesMesh = new THREE.Mesh( geometry);
-
-	var shelfWalls = new THREE.CubeGeometry(
-		getShelfWidth(), 
-		getShelfWallHeight(), 
-		getShelfHeight());
-
-	var shelfWallMesh = new THREE.Mesh(shelfWalls);
 
 	var numObjects = departmentList.length;
 	_numberOfDepartments = numObjects;
@@ -82,15 +74,8 @@ function createShelves(scene, body, departmentList, config) {
 		var shelfUsage = new THREE.Vector3(0,0,0);
 		for (var index in config.departments[department]) {
 			var object = config.departments[department][index];
-			
 			shelfUsage = loadObject(object, body, i*intervalAngle, shelfUsage)
-			console.log("shelfUsage")
-			console.log(shelfUsage)
 		}
-
-		var testg = new THREE.CubeGeometry(10,10,10);
-		var testm = new THREE.Mesh(testg, new THREE.MeshBasicMaterial())
-
 
 		finalMesh.rotation.z = i*intervalAngle
 		_departmentsToIndexes[departmentList[i]] = i;
@@ -105,28 +90,22 @@ function createShelves(scene, body, departmentList, config) {
 	finalMesh.rotation.x = Math.PI/2;
 
 	body.add(finalMesh)
-	//
-	//body.add();
 }
 
 
 
 function loadObject(object, body, angle, used) {
-	//console.log(object)
-	var pos;
+	var pos, width, length, height;
 	var dims = object.dimensions;
+	height = dims.height;
 	if (object.type == "cube") {
-		var width, length, height;
 		width= dims.width;
-		height = dims.height;
 		length = dims. length;
 		pos = baseLoadObject(object.quantity, width, length, height, used);
 		used = loadCube(object, body, angle, pos);
 	} else if (object.type == "cylinder") {
-		var width, length, height;
 		width = dims.radius*2;
 		length = dims.radius*2;
-		height = dims.height;
 		pos = baseLoadObject(object.quantity, width, length, height, used);
 		used = loadCylinder(object, body, angle, pos);
 	}
@@ -138,30 +117,18 @@ function baseLoadObject(quantity, pwidth, plength, pheight, used) {
 
 	var width = pwidth
 	var depth = plength
-	//var height = pheight
-
-	//console.log("width: "+width);
-	//console.log("depth: "+depth);
-	//console.log("height: "+height);
 
 	var usedVector = used;
  	var usedWidth = usedVector.z;
- 	//var usedLength = usedVector.z;
 
 	var padding = getPaddingBetweenObjects();
 	var widthItems = Math.floor((getShelfLength() - usedWidth)/(width + padding));
 	var depthItems = Math.floor((getShelfWidth())/(depth + padding));
-	
-	//console.log("widthwise items: "+widthItems);
-	//console.log("depthwise items: "+depthItems);
-	//console.log("heightwise items: "+getShelfDistance()/height);
-
 
 	var widthIndex = 0, depthIndex = 0;
 	var heightIndex = usedVector.y;
 	var pos = [];
 	for (var i = 0; i < quantity; i++) {
-		//console.log(i);
 		pos.push(new THREE.Vector3(
 			(depth+padding)*depthIndex,
 			heightIndex*getShelfDistance() + getShelfHeight()/2,
@@ -171,18 +138,13 @@ function baseLoadObject(quantity, pwidth, plength, pheight, used) {
 		if (depthIndex >= depthItems) {
 			depthIndex = 0;
 			widthIndex++;
-			//console.log("width incremented")
 			if (widthIndex >= widthItems) {
 				heightIndex++;
-				//console.log(heightIndex);
 				usedWidth = 0;
 				widthItems = Math.floor((getShelfLength() - usedWidth)/(width + padding));
 				widthIndex = 0;
 				depthIndex = 0;
 				if (heightIndex >= getNumShelves()) {
-					//shelfIndex++;
-					//extraShelves++;
-					//heightIndex = 0;
 					alert("ran out of shelf space");
 					break;
 				}
@@ -192,8 +154,7 @@ function baseLoadObject(quantity, pwidth, plength, pheight, used) {
 	return pos;
 }
 
-function loadAndRender(filename) {
-	//not calling render here
+function loadTexture(filename) {
 	return THREE.ImageUtils.loadTexture(filename, {});
 }
 
@@ -201,26 +162,20 @@ function loadInspectionObject(object) {
 	var inspectionZ = -30;
 	if (object.type == 'cube') {
 		var meshes = loadCube(object)
-		//console.log(meshes);
 		for (index in meshes) {
 			var mesh = meshes[index];
-			mesh.position.set(0,0,0)
+			//mesh.position.set(0,0,0)
 			camera.add(mesh)
 			mesh.position.z = inspectionZ;
-			//mesh.position.x = 0*object.dimensions.width/2
-			//mesh.position.y = 0*-object.dimensions.height/2
 			mesh.rotation.y = -Math.PI/2;
 		}
 		return meshes;
 	} else if(object.type == 'cylinder') {
 		var meshes = loadCylinder(object)
-		//console.log(meshes);
 		for (index in meshes) {
 			var mesh = meshes[index];
 			camera.add(mesh)
 			mesh.position.z = inspectionZ;
-			//mesh.position.x = (object.dimensions.radius)
-			//mesh.position.y = 0*-object.dimensions.height/2
 			mesh.rotation.y = -Math.PI/2;
 		}
 		return meshes;
@@ -240,13 +195,15 @@ function loadCube(json, body, angle, pos) {
 
 	var materials = []
 	for (var i = 0; i < images.length; i++) {
-		//console.log(images[i]);
 
 		var texture = THREE.ImageUtils.loadTexture(images[i], {});
 		if (inspection) {
 			texture.anisotropy = 16;
+			materials.push(new THREE.MeshBasicMaterial( { map: texture } ));
+		} else {
+			materials.push(new THREE.MeshPhongMaterial( { map: texture } ));
 		}
-		materials.push(new THREE.MeshPhongMaterial( { map: texture } ));
+
 	}
 	var quantity = json.quantity;
 	var dims = json.dimensions;
@@ -261,7 +218,6 @@ function loadCube(json, body, angle, pos) {
 	} else {
 		end = Math.min(pos.length, quantity);
 	}
-
 
 	for (var i = 0; i < end; i++) {
 		
@@ -286,33 +242,29 @@ function loadCube(json, body, angle, pos) {
 	}
 
 	cubesMesh.userData = json;
-	//console.log(cubesMesh);
 
 	cubesMesh.rotation.z = angle
 	cubesMesh.rotation.x = Math.PI/2;
 	cubesMesh.translateY(WORLD_RADIUS);
 	body.add(cubesMesh)
 
-	//shelf.add(cubesMesh);
 	ALL_OBJECTS.push(cubesMesh);
 
 	var usedVector = new THREE.Vector3(0,0,0);
 	var lastPos = pos[pos.length-1];
 	usedVector.z = lastPos.z + dims.width + getPaddingBetweenObjects();
 	usedVector.y = Math.floor((lastPos.y-getShelfHeight())/getShelfDistance()) + 1;
-	
+
 	return usedVector;
 }
 
 function loadCylinder(json, world, angle, pos) {
-	console.log("loadCylinder...")
 
 	var inspection = false
 	if (body == null && angle == null && pos == null) {
 		console.log("NOT IN KANSAS ANYMORE")
 		inspection = true
 	}
-
 
 	var radius = json.dimensions.radius;
 	var height = json.dimensions.height;
@@ -335,10 +287,8 @@ function loadCylinder(json, world, angle, pos) {
 		end = Math.min(pos.length, json.quantity)
 	}
 	for (var i = 0; i < end; i++) {
-		//yRot = Math.random() * Math.PI;
 		yRot = -Math.PI/2 + Math.random() * Math.PI/6 - Math.PI/12;
-		//body.position.set(0,4.5/2,-5*i);
-		//console.log(pos[i])
+		
 		var position = new THREE.Vector3(pos[i].x, pos[i].y, pos[i].z);
 		position.x = position.x + radius - getShelfWidth()/2;
 		position.z = position.z + radius - getShelfLength()/2;
@@ -363,7 +313,6 @@ function loadCylinder(json, world, angle, pos) {
 		THREE.GeometryUtils.merge( lids, lid );
 
 		if (inspection) {
-			//position.y = position.y - height;
 			lid.position = pos[i]
 			lid.position.y = lid.position.y - height
 			lid.rotation.set(Math.PI/2,0,yRot);
@@ -371,12 +320,22 @@ function loadCylinder(json, world, angle, pos) {
 		}
 
 	}
+	var lidMesh;
+	if (inspection) {
+		lidMesh = new THREE.Mesh(lids, new THREE.MeshBasicMaterial( { map: loadTexture(json.materials.top) } ));
+	} else {
+		lidMesh = new THREE.Mesh(lids, new THREE.MeshPhongMaterial( { map: loadTexture(json.materials.top) } ));
 
-	var lidMesh = new THREE.Mesh(lids, new THREE.MeshPhongMaterial( { map: loadAndRender(json.materials.top) } ));
+	}
 	lidMesh.castShadow = true;
 	lidMesh.receiveShadow = true;
-
-	var bodiesMesh = new THREE.Mesh(bodies, new THREE.MeshPhongMaterial( { map: loadAndRender(json.materials.label) } ));
+	var bodiesMesh;
+	if (inspection) {
+		bodiesMesh = new THREE.Mesh(bodies, new THREE.MeshBasicMaterial( { map: loadTexture(json.materials.label) } ));
+	} else {
+		bodiesMesh = new THREE.Mesh(bodies, new THREE.MeshPhongMaterial( { map: loadTexture(json.materials.label) } ));
+	}
+	
 	bodiesMesh.castShadow = true;
 	bodiesMesh.receiveShadow = true;
 	bodiesMesh.userData = json;
@@ -389,17 +348,12 @@ function loadCylinder(json, world, angle, pos) {
 	lidMesh.rotation.x = Math.PI/2;
 	lidMesh.translateY(WORLD_RADIUS);
 
-	//console.log("lidMesh position:")
-	//console.log(lidMesh.position)
 	world.add(lidMesh)
 	
-	//scene.add(bodiesMesh);
 	bodiesMesh.rotation.z = angle
 	bodiesMesh.rotation.x = Math.PI/2;
 	bodiesMesh.translateY(WORLD_RADIUS);
 
-	//console.log("bodiesMesh position:")
-	//console.log(bodiesMesh.position)
 	world.add(bodiesMesh)
 
 	ALL_OBJECTS.push(bodiesMesh);
@@ -408,7 +362,6 @@ function loadCylinder(json, world, angle, pos) {
 	var lastPos = pos[pos.length-1];
 	usedVector.z = lastPos.z + width + getPaddingBetweenObjects();
 	usedVector.y = Math.floor((lastPos.y-getShelfHeight())/getShelfDistance())+1;
-	//console.log("height index: "+usedVector.y )
 	usedVector.x = lastPos.x + width + getPaddingBetweenObjects();
 	return usedVector;
 }
@@ -418,7 +371,6 @@ function createText(text) {
 
 		size: 20,
 		height: 5,
-		width: 10,
 		curveSegments: 4,
 
 		//from 'helvetiker' js glyphs library
@@ -435,7 +387,7 @@ function createText(text) {
 
 	});
 	textGeo.computeBoundingBox();
-	var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+	var centerOffset = -( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x )/2;
 	var textMesh = new THREE.Mesh(textGeo);
 
 	textMesh.position.y = getShelfDistance()*getNumShelves();

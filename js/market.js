@@ -1,7 +1,14 @@
-var camera, scene, renderer, container, projector, composer;
-var clock = new THREE.Clock();
-var keyboard = new THREEx.KeyboardState();
-var cylinderThing;
+var camera, scene, renderer, container, projector, keyboard;
+var _worldCylinder;
+var _wallMesh;
+var _foreground_meshes = [];
+var _inHud = false;
+var _rotationMouseDown = false;
+var _mouseX = 0
+var _mouseY = 0;
+var _currentObject;
+var CUR_INDEX = 0;
+var TWEENING = false
 
 var WORLD_RADIUS = 1000;
 
@@ -10,24 +17,23 @@ animate();
 
 function init() {
 	container = document.getElementById( 'container' );
-	rendererSetup();
 	scene = new THREE.Scene();
-	mainCamSetup();
-
-	new ConfigLoader("test2.json", scene).config();
-
 	projector = new THREE.Projector();
+	keyboard = new THREEx.KeyboardState();
+
+	rendererSetup();
+	cameraSetup();
+	inspectionWallSetup();
+
+	new ConfigLoader("config.json", scene).config();
+
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 }
 
-var CUR_INDEX = 0;
-var TWEENING = false
-
 function tweenCallback() {
-	console.log("done tweening"); 
 	TWEENING = false;
 }
 
@@ -57,24 +63,15 @@ function update() {
 			}
 			animateToIndex(CUR_INDEX, tweenCallback);
 		}
-	}
-
-	
-}
-
-function lightsSetup() {
-	var light = new THREE.AmbientLight( "white" );
-	scene.add( light );
+	}	
 }
 
 function rendererSetup() {
 	renderer = new THREE.WebGLRenderer( {antialias:true} );
 	renderer.setSize(window.innerWidth, window.innerHeight);
   	renderer.shadowMapEnabled = true;
-	//renderer.autoClear = false;
 	renderer.setClearColor( "black", 1 );
 	container.appendChild(renderer.domElement);
-	renderer.shadowMapEnabled = true;
 }
 
 function animate() {
@@ -83,22 +80,21 @@ function animate() {
 	render();
 }
 
-function mainCamSetup() {
+function cameraSetup() {
+	var camHeight = 25;
 	camera = new THREE.PerspectiveCamera(30, getAspect(), 1, 10000);
-	var y =  WORLD_RADIUS + 25
-	camera.position.set(0,y, 0);
-	//camera.position.set(0, 0, -500);
+	var y =  WORLD_RADIUS + camHeight;
+	camera.position.set(0, y, 0)
 
+	var lightOffset = 200;
 	var spotLight = new THREE.SpotLight( 0xffffff );
-	spotLight.position.set( 0, WORLD_RADIUS+200, -200 );
-	console.log("lights...")
+	spotLight.position.set( 0, WORLD_RADIUS+lightOffset, -lightOffset );
 	spotLight.target.position.set( 0, WORLD_RADIUS, 0 );
 
 	spotLight.castShadow = true;
 	spotLight.intensity = 2;
 	scene.add(spotLight)
 
-	camera.up = new THREE.Vector3(0,1,0);
 	camera.lookAt( new THREE.Vector3(0,y,1) );
 	scene.add(camera);
 }
@@ -118,13 +114,6 @@ function render() {
 	renderer.render( scene, camera );
 }
 
-var _foreground_meshes = [];
-
-var _inHud = false;
-var _rotationMouseDown = false;
-var _mouseX = 0
-var _mouseY = 0;
-
 function onDocumentMouseDown( event ) {
 
 	event.preventDefault();
@@ -133,7 +122,6 @@ function onDocumentMouseDown( event ) {
         _mouseX = event.clientX;
         _mouseY = event.clientY;
 	} else {
-		console.log("ray casting...");
 		var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
 		projector.unprojectVector( vector, camera );
 
@@ -142,23 +130,17 @@ function onDocumentMouseDown( event ) {
 		var intersects = raycaster.intersectObjects( ALL_OBJECTS );
 
 		if ( intersects.length > 0 ) {
-			var object = intersects[ 0 ].object.userData;
-			_foreground_meshes = loadInspectionObject(object);
-			showInspectionHud(object)
+			_currentObject = intersects[ 0 ].object.userData;
+			_foreground_meshes = loadInspectionObject(_currentObject);
+			showInspectionHud(_currentObject)
 		}
 	}
 }
 
 function rotateInspectionMeshes(dx, dy) {
-	//console.log(dx,dy)
-
-	
 	for (index in _foreground_meshes) {
-		var pos = _foreground_meshes[index].position
-		var pos = new THREE.Vector3(pos.x, pos.y, pos.z);
 	    _foreground_meshes[index].rotation.y += dx / 100;
     	_foreground_meshes[index].rotation.x += dy / 100;
-    	_foreground_meshes[index].position = pos;
 	}
 }
 
@@ -181,19 +163,44 @@ function onDocumentMouseUp(event) {
 	}
 }
 
-var _wallMesh;
+function tweenBlackWall(toOpaque) {
+
+	var dark = 0.85;
+	var start = { opacity : 0 };
+	var finish = { opacity : dark }
+
+	if (!toOpaque) {
+		start.opacity = dark;
+		finish.opacity = 0;
+	} 
+	var tween = new TWEEN.Tween(start).to(finish, 1500);
+	tween.easing(TWEEN.Easing.Exponential.Out)
+	tween.onUpdate(function(){
+	    _wallMesh.material.opacity = start.opacity
+	});
+	if (toOpaque) {
+		camera.add(_wallMesh);
+	} else {
+		tween.onComplete(function() { camera.remove(_wallMesh)});
+	}
+	tween.start();
+}
 
 function showInspectionHud(object) {
 	_inHud = true;
-	var wallGeo = new THREE.PlaneGeometry(WORLD_RADIUS,WORLD_RADIUS,1,1);
-	var wallMaterial = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0.75, color : "black" } );
-	_wallMesh = new THREE.Mesh(wallGeo, wallMaterial);
-	camera.add(_wallMesh);
+	tweenBlackWall(true);
 	_wallMesh.position.z = -75;
 	var hud = $('.inspectionHud')
 	hud.find('#itemName').text(object.name)
-	hud.find('#itemPrice').text('$'+object.price)
+	var price = "$"+parseFloat(object.price).toFixed(2);
+	hud.find('#itemPrice').text(price)
 	hud.show();
+}
+
+function inspectionWallSetup() {
+	var wallGeo = new THREE.PlaneGeometry(WORLD_RADIUS,WORLD_RADIUS,1,1);
+	var wallMaterial = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0.75, color : "black" } );
+	_wallMesh = new THREE.Mesh(wallGeo, wallMaterial);
 }
 
 function hideInspectionHud() {
@@ -201,7 +208,7 @@ function hideInspectionHud() {
 	for (index in _foreground_meshes) {
 		camera.remove(_foreground_meshes[index]);
 	}
-	camera.remove(_wallMesh);
+	tweenBlackWall(false);
 	_foreground_meshes = []
 	_inHud = false;
 }
@@ -217,13 +224,12 @@ function animateToIndex(index, callback) {
 	var stepBack = _intervalAngle/3
 	var angle = -Math.PI/2-index*_intervalAngle + stepBack
 
-	var start = { x : cylinderThing.rotation.x };
-	var finish = { x : angle};
+	var start = { x : _worldCylinder.rotation.x };
 
-	var tween = new TWEEN.Tween(start).to(finish, 2000);
+	var tween = new TWEEN.Tween(start).to({x:angle}, 2000);
 	tween.easing(TWEEN.Easing.Quartic.InOut)
 	tween.onUpdate(function(){
-	    cylinderThing.rotation.x = start.x
+	    _worldCylinder.rotation.x = start.x
 	});
 
 	if(callback != null) {
@@ -233,7 +239,25 @@ function animateToIndex(index, callback) {
 	tween.start();	
 }
 
+function addToCart() {
+	var total = parseFloat($('#cartTotal').html())
+
+	var list = $($(".cartList")[0])
+
+	list.prepend(
+    		$('<li/>', {
+		        'class': 'cartListItem',
+		        html: _currentObject.name,
+		        'onClick' : 'departmentClick(this.id)'
+    		})
+		);
+	total+=parseFloat(_currentObject.price);
+	$('#cartTotal').html(total.toFixed(2))
+
+}
+
 function departmentClick(s) {
-	if (_inHud) return;
-	animateToDepartment(s);
+	if (!_inHud) {
+		animateToDepartment(s);
+	}
 }

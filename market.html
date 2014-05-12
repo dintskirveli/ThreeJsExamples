@@ -13,7 +13,7 @@
 		height : auto;
 		float: right;
 		position: absolute;
-		opacity: 0.5;
+		opacity: 0.75;
 		bottom:0px;
 		display: block;
 		margin-top: 0px;
@@ -48,9 +48,7 @@
 	.inspectionHud {
 		width : auto;
 		height : auto;
-		background : white; 
 		position: absolute;
-		background: rgba(255, 255, 255, 0);
 		top:0px;
 		left:0px;
 		margin-left: 15px;
@@ -67,7 +65,53 @@
 	}
 
 	.inspectionButton {
-		font-size: 3em;
+		font-size: 2em;
+		cursor: pointer;
+	}
+
+	.cart {
+		width : 245px;
+		height : auto;
+		float: right;
+		position: absolute;
+		opacity: 0.75;
+		top:0px;
+		display: block;
+		margin-top: 0px;
+		margin-right: 15px;
+		right: 0px;
+		overflow:scroll;
+		background-color: black;
+	}
+
+	.cartList {
+		cursor: pointer;
+		margin-left: 0px;
+		padding: 5px;
+	}
+
+	.cartFooter {
+		cursor: default;
+		list-style-type: none;
+		color: white;
+		font-weight:bold;
+		font-family: helvetica;
+	}
+
+	.cartListItem {
+		cursor: pointer;
+		list-style-type: none;
+		color: white;
+		font-family: helvetica;
+	}
+
+	.cartHeader {
+		cursor: default;
+		list-style-type: none;
+		color: white;
+		font-size: 20px;
+		font-weight:bold;
+		font-family: helvetica;
 	}
 
 	</style>
@@ -88,13 +132,23 @@
 			<b class='inspectionText' id='itemPrice'></b>
 			<br>
 			<button class='inspectionButton' onclick="hideInspectionHud()">Back</button>
+			<button class='inspectionButton' onclick="addToCart()">Add to cart</button>
 		</div>  
+
+		<div class='cart'>
+			<u class='cartHeader'>Cart</u>
+			<ul class='cartList'>
+				<li class='cartFooter'>
+					<b>Total: $</b>
+					<b id='cartTotal'>0.00</b>
+				</li>
+			</ul>
+		</div>
 	
 	</div>		
 
 	<script src="js/Three62.js"></script>
 	<script src="js/THREEx.KeyboardState.js"></script>
-	<script src="js/Stats.js"></script>
 	<script src="js/shelf.js"></script>
 	<script src="js/JSONLoader.js"></script>
 	<script src="js/ConfigLoader.js"></script>
