@@ -257,7 +257,13 @@ function addToCart() {
 }
 
 function departmentClick(s) {
+<<<<<<< HEAD
 	if (!_inHud) {
 		animateToDepartment(s);
 	}
 }
+=======
+	if (_inHud) return;
+	animateToDepartment(s);
+}
+>>>>>>> d0ff3eff9e3c6d7d49ddc5a97990950047329f93
