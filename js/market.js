@@ -164,7 +164,7 @@ function onDocumentMouseUp(event) {
 }
 
 function tweenBlackWall(toOpaque) {
-
+	TWEEN.removeAll();
 	var dark = 0.85;
 	var start = { opacity : 0 };
 	var finish = { opacity : dark }
